@@ -3,11 +3,13 @@ setlocal
 pushd "%~dp0.."
 if not exist "llm\llama-server.exe" (
   echo Missing llm\llama-server.exe
+  echo Run scripts\download-assets.bat on a Windows machine with internet access.
   popd
   exit /b 1
 )
 if not exist "models\qwen2.5-coder-1.5b-instruct-q4_k_m.gguf" (
   echo Missing models\qwen2.5-coder-1.5b-instruct-q4_k_m.gguf
+  echo Run scripts\download-assets.bat on a Windows machine with internet access.
   popd
   exit /b 1
 )

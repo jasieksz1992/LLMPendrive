@@ -15,8 +15,7 @@ $TempDir = Join-Path $RepoRoot '.download-temp'
 $LlamaServerPath = Join-Path $LlmDir 'llama-server.exe'
 $ModelFileName = 'qwen2.5-coder-1.5b-instruct-q4_k_m.gguf'
 $ModelPath = Join-Path $ModelsDir $ModelFileName
-$ModelUrl = "https://huggingface.co/Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF/resolve/main/$ModelFileName?download=true"
-
+$ModelUrl = 'https://huggingface.co/Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF/resolve/main/qwen2.5-coder-1.5b-instruct-q4_k_m.gguf?download=true'
 function Write-Step {
   param([string]$Message)
   Write-Host "==> $Message"

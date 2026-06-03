@@ -177,6 +177,8 @@ workspace\csharp\
 workspace\java\
 ```
 
+A ready-to-run C# example is included in `workspace\csharp\ProductStockReporter`. It reads product CSV files, groups products by category, calculates stock value totals, and exports the summary report as JSON.
+
 All network requests are localhost requests only:
 
 ```text

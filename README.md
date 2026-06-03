@@ -82,6 +82,27 @@ The launcher expects this exact file name:
 models\qwen2.5-coder-1.5b-instruct-q4_k_m.gguf
 ```
 
+
+## Download missing LLM files
+
+If `scripts\start-llm.bat` prints that `llm\llama-server.exe` or `models\qwen2.5-coder-1.5b-instruct-q4_k_m.gguf` is missing, run this once on a Windows machine with internet access:
+
+```bat
+scripts\download-assets.bat
+```
+
+The script downloads the latest Windows x64 CPU `llama.cpp` release from GitHub, copies the folder containing `llama-server.exe` into `llm\`, and downloads the recommended Qwen2.5-Coder GGUF model from Hugging Face into `models\`. The model is about 1 GB, so the download can take a while.
+
+Useful options:
+
+```bat
+scripts\download-assets.bat -SkipModel
+scripts\download-assets.bat -SkipLlama
+scripts\download-assets.bat -Force
+```
+
+Use `-SkipModel` if you only need `llama-server.exe`, `-SkipLlama` if you only need the GGUF model, and `-Force` to download again even when files already exist.
+
 ## Build the web app before offline use
 
 The USB copy should include the built frontend in `app\dist`. Build it once on a machine where the app dependencies are already available.

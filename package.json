@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "dev": "cd app && npm run dev",
+    "build": "cd app && npm run build",
+    "preview": "cd app && npm run preview",
+    "start": "cd app && npm run start",
+    "typecheck": "cd app && npm run typecheck"
+  }
+}

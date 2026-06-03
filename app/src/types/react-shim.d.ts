@@ -1,0 +1,31 @@
+declare module 'react' {
+  export function StrictMode(props: { children?: unknown }): unknown
+  export function useState<T>(initialValue: T): [T, (value: T) => void]
+}
+
+declare module 'react-dom/client' {
+  export type Root = {
+    render: (node: unknown) => void
+  }
+
+  export function createRoot(element: HTMLElement): Root
+}
+
+declare module 'react/jsx-runtime' {
+  export const jsx: unknown
+  export const jsxs: unknown
+  export const Fragment: unknown
+}
+
+declare module '*.css' {
+  const classes: Record<string, string>
+  export default classes
+}
+
+declare namespace JSX {
+  type Element = unknown
+
+  interface IntrinsicElements {
+    [elementName: string]: any
+  }
+}

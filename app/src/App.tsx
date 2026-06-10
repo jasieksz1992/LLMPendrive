@@ -28,7 +28,6 @@ const withDetectedTarget = (form: AssistantFormValues): AssistantFormValues => {
 export const App = () => {
   const [form, setForm] = useState(initialForm)
   const [code, setCode] = useState('')
-  const [description, setDescription] = useState('')
   const [explanation, setExplanation] = useState<string[]>([])
   const [error, setError] = useState('')
   const [status, setStatus] = useState('')
@@ -49,7 +48,6 @@ export const App = () => {
     setError('')
     setStatus('')
     setCode('')
-    setDescription('')
     setExplanation([])
 
     try {
@@ -59,7 +57,6 @@ export const App = () => {
       const parsedResult = completeGeneratedResult(parseGeneratedResult(result), promptForm)
       setForm(promptForm)
       setCode(parsedResult.code)
-      setDescription(parsedResult.description)
       setExplanation(parsedResult.explanation)
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Generation failed')
@@ -97,7 +94,7 @@ export const App = () => {
     <main className="shell">
       <AssistantForm form={form} loading={loading} onChange={handleFormChange} onSubmit={handleGenerate} />
       <div className="layout">
-        <ExplanationAccordion description={description} explanation={explanation} loading={loading} />
+        <ExplanationAccordion explanation={explanation} loading={loading} />
         <CodePreview code={code} error={error} status={status} loading={loading} onCopy={handleCopy} onSave={handleSave} />
       </div>
     </main>

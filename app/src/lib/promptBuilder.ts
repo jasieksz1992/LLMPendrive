@@ -13,12 +13,15 @@ const applicationNames = {
   unknown: 'unspecified application type'
 }
 
+const descriptionStartMarker = '---DESCRIPTION_START---'
+const descriptionEndMarker = '---DESCRIPTION_END---'
 const codeStartMarker = '---CODE_START---'
 const codeEndMarker = '---CODE_END---'
 const explanationStartMarker = '---EXPLANATION_START---'
 const explanationEndMarker = '---EXPLANATION_END---'
 
-const explanationHeadingPattern = /^\s*(?:#{1,6}\s*)?(?:explanation|wyjaśnienie|wyjasnienie|tłumaczenie|tlumaczenie|opis|jak powstało rozwiązanie|jak powstalo rozwiazanie)\s*:?\s*$/imu
+const descriptionHeadingPattern = /^\s*(?:#{1,6}\s*)?(?:description|opis|co robi program|co robi aplikacja)\s*:?\s*$/imu
+const explanationHeadingPattern = /^\s*(?:#{1,6}\s*)?(?:steps|kroki|explanation|wyjaśnienie|wyjasnienie|tłumaczenie|tlumaczenie|jak powstało rozwiązanie|jak powstalo rozwiazanie|kroki rozwiązania|kroki rozwiazania)\s*:?\s*$/imu
 const codeHeadingPattern = /^\s*(?:#{1,6}\s*)?(?:code|kod|rozwiązanie|rozwiazanie)\s*:?\s*$/imu
 const fencedBlockPattern = /```(?:[\w#+.-]+)?\s*\n([\s\S]*?)```/m
 
@@ -63,6 +66,24 @@ const splitAtHeading = (content: string, headingPattern: RegExp) => {
     before: content.slice(0, match.index).trim(),
     after: content.slice(match.index + match[0].length).trim()
   }
+}
+
+const firstParagraph = (content: string) => content
+  .split('\n')
+  .map((line) => line.replace(/^\s*(?:[-*]|\d+[.)])\s*/, '').trim())
+  .find(Boolean) || ''
+
+const extractFallbackDescription = (content: string) => {
+  const withoutCodeBlocks = removeFencedBlocks(content)
+  const splitByDescription = splitAtHeading(withoutCodeBlocks, descriptionHeadingPattern)
+
+  if (splitByDescription?.after) {
+    const descriptionBeforeCode = splitAtHeading(splitByDescription.after, codeHeadingPattern)
+    const descriptionBeforeExplanation = splitAtHeading(descriptionBeforeCode?.before || splitByDescription.after, explanationHeadingPattern)
+    return firstParagraph(descriptionBeforeExplanation?.before || descriptionBeforeCode?.before || splitByDescription.after)
+  }
+
+  return ''
 }
 
 const extractFallbackCode = (content: string) => {
@@ -113,10 +134,10 @@ const parseExplanation = (content: string) => {
   for (const rawLine of content.split('\n')) {
     const line = rawLine
       .replace(/^\s*(?:[-*]|\d+[.)])\s*/, '')
-      .replace(/^(?:explanation|wyjaśnienie|wyjasnienie|tłumaczenie|tlumaczenie)\s*:?\s*/i, '')
+      .replace(/^(?:steps|kroki|explanation|wyjaśnienie|wyjasnienie|tłumaczenie|tlumaczenie)\s*:?\s*/i, '')
       .trim()
 
-    if (!line || findMarker(line, '---CODE_') !== -1 || findMarker(line, '---EXPLANATION_') !== -1) {
+    if (!line || findMarker(line, '---CODE_') !== -1 || findMarker(line, '---EXPLANATION_') !== -1 || findMarker(line, '---DESCRIPTION_') !== -1) {
       continue
     }
 
@@ -129,7 +150,7 @@ const parseExplanation = (content: string) => {
     seen.add(key)
     points.push(line)
 
-    if (points.length === 8) {
+    if (points.length === 10) {
       break
     }
   }
@@ -139,6 +160,7 @@ const parseExplanation = (content: string) => {
 
 export const parseGeneratedResult = (rawContent: string): GeneratedResult => {
   const content = normalizeNewlines(rawContent)
+  const markedDescription = section(content, descriptionStartMarker, descriptionEndMarker)
   const markedCode = section(content, codeStartMarker, codeEndMarker)
   const markedExplanation = section(content, explanationStartMarker, explanationEndMarker)
   const code = markedCode ? stripCodeFence(markedCode) : extractFallbackCode(content)
@@ -146,6 +168,7 @@ export const parseGeneratedResult = (rawContent: string): GeneratedResult => {
 
   return {
     code,
+    description: firstParagraph(markedDescription) || extractFallbackDescription(content),
     explanation: parseExplanation(explanationContent)
   }
 }
@@ -160,18 +183,23 @@ export const buildPrompt = (form: AssistantForm) => {
     `Language mode selected automatically from the task: ${language}.`,
     'Generate stable, simple, production-ready code.',
     'For desktop applications use Java or C# according to the selected language; for web applications use React; for mobile applications use Java.',
-    'Separate the answer into two strict sections: code and explanation.',
+    'Return three strict sections: description, code, and explanation.',
+    'The description section must be in Polish. Write 1-2 plain-language sentences that explain what the generated program does, without technical jargon.',
     'The code section must contain only compilable source code. Do not put task descriptions, deployment notes, screenshots, packaging instructions, Markdown, or prose inside the code section.',
-    'The explanation section must be in Polish and contain 3-6 concise, unique numbered points only.',
-    'Do not repeat the same assumption or method description in the explanation. Do not restate the full task as a bullet list.',
+    'The explanation section must be in Polish and contain 6-10 numbered points. Write for a complete beginner, not for a programmer.',
+    'Each explanation point must be concrete and detailed: say what happens, why it is needed, and what the user should notice. If you must use a technical word, immediately explain it in simple words.',
+    'Use short, friendly sentences. Avoid unexplained jargon, vague phrases, and repeated points.',
     'If the task mentions separate fields or code sections, keep them separate in the generated code instead of merging them into one repeated description.',
     'Return the response in exactly this format and do not add text before or after it:',
+    descriptionStartMarker,
+    'Krótki opis po polsku, prostym językiem.',
+    descriptionEndMarker,
     codeStartMarker,
     'compilable source code only, without Markdown fences or prose',
     codeEndMarker,
     explanationStartMarker,
-    '1. Unikalny, krótki punkt wyjaśnienia po polsku.',
-    '2. Następny unikalny, krótki punkt wyjaśnienia po polsku.',
+    '1. Pierwszy dokładny krok po polsku, napisany prostym językiem dla laika.',
+    '2. Następny dokładny krok po polsku, bez skrótów myślowych.',
     explanationEndMarker,
     `Task description:\n${task || 'No task description provided'}`
   ].join('\n\n')

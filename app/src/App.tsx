@@ -28,6 +28,7 @@ const withDetectedTarget = (form: AssistantFormValues): AssistantFormValues => {
 export const App = () => {
   const [form, setForm] = useState(initialForm)
   const [code, setCode] = useState('')
+  const [description, setDescription] = useState('')
   const [explanation, setExplanation] = useState<string[]>([])
   const [error, setError] = useState('')
   const [status, setStatus] = useState('')
@@ -48,6 +49,7 @@ export const App = () => {
     setError('')
     setStatus('')
     setCode('')
+    setDescription('')
     setExplanation([])
 
     try {
@@ -57,6 +59,7 @@ export const App = () => {
       const parsedResult = parseGeneratedResult(result)
       setForm(promptForm)
       setCode(parsedResult.code)
+      setDescription(parsedResult.description)
       setExplanation(parsedResult.explanation)
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Generation failed')
@@ -92,20 +95,10 @@ export const App = () => {
 
   return (
     <main className="shell">
-      <header className="hero">
-        <div>
-          <p className="eyebrow">USB portable offline assistant</p>
-          <h1>Portable Code Assistant</h1>
-          <p>Opisz zadanie, a aplikacja sama dobierze C#, Javę albo React do typu projektu.</p>
-        </div>
-        <div className="offline-badge">Offline localhost only</div>
-      </header>
+      <AssistantForm form={form} loading={loading} onChange={handleFormChange} onSubmit={handleGenerate} />
       <div className="layout">
-        <AssistantForm form={form} loading={loading} onChange={handleFormChange} onSubmit={handleGenerate} />
-        <div className="result-stack">
-          <CodePreview code={code} error={error} status={status} language={form.language} loading={loading} onCopy={handleCopy} onSave={handleSave} />
-          <ExplanationAccordion explanation={explanation} loading={loading} />
-        </div>
+        <ExplanationAccordion description={description} explanation={explanation} loading={loading} />
+        <CodePreview code={code} error={error} status={status} loading={loading} onCopy={handleCopy} onSave={handleSave} />
       </div>
     </main>
   )

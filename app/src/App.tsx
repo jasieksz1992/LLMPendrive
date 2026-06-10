@@ -3,7 +3,7 @@ import { AssistantForm } from './components/AssistantForm'
 import { CodePreview } from './components/CodePreview'
 import { ExplanationAccordion } from './components/ExplanationAccordion'
 import { generateCode } from './lib/llmClient'
-import { buildPrompt, parseGeneratedResult } from './lib/promptBuilder'
+import { buildPrompt, completeGeneratedResult, parseGeneratedResult } from './lib/promptBuilder'
 import { saveGeneratedCode } from './lib/saveClient'
 import { detectTaskTarget } from './lib/taskDetection'
 import type { AssistantForm as AssistantFormValues } from './types/assistant'
@@ -56,7 +56,7 @@ export const App = () => {
       const promptForm = withDetectedTarget(form)
       const prompt = buildPrompt(promptForm)
       const result = await generateCode(prompt)
-      const parsedResult = parseGeneratedResult(result)
+      const parsedResult = completeGeneratedResult(parseGeneratedResult(result), promptForm)
       setForm(promptForm)
       setCode(parsedResult.code)
       setDescription(parsedResult.description)

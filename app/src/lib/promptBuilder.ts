@@ -1,4 +1,4 @@
-import type { AssistantForm, GeneratedResult } from '../types/assistant'
+import type { AssistantForm, GeneratedResult, LanguageMode } from '../types/assistant'
 
 const languageNames = {
   csharp: 'C#',
@@ -172,6 +172,49 @@ export const parseGeneratedResult = (rawContent: string): GeneratedResult => {
     explanation: parseExplanation(explanationContent)
   }
 }
+
+
+const fallbackLanguageNames: Record<LanguageMode, string> = {
+  csharp: 'C#',
+  java: 'Java',
+  react: 'React'
+}
+
+const summarizeTask = (task: string) => task
+  .replace(/\s+/g, ' ')
+  .trim()
+  .replace(/[.!?;:]+$/g, '')
+
+const buildFallbackDescription = (form: AssistantForm) => {
+  const task = summarizeTask(form.task)
+
+  if (!task) {
+    return `Wygenerowany kod w języku ${fallbackLanguageNames[form.language]} tworzy proste rozwiązanie zgodne z wpisanym poleceniem.`
+  }
+
+  return `Wygenerowany kod w języku ${fallbackLanguageNames[form.language]} realizuje zadanie: ${task}. Możesz go skopiować, uruchomić i dopasować szczegóły do swoich potrzeb.`
+}
+
+const buildFallbackExplanation = (form: AssistantForm) => {
+  const language = fallbackLanguageNames[form.language]
+  const task = summarizeTask(form.task)
+  const taskText = task ? `: ${task}` : ''
+
+  return [
+    `Najpierw kod tworzy podstawę rozwiązania w języku ${language} dla wpisanego zadania${taskText}.`,
+    'Następnie przygotowuje najważniejsze miejsca programu, czyli te fragmenty, które przechowują dane i wykonują główne czynności.',
+    'Potem program porządkuje działanie krok po kroku, żeby łatwiej było zobaczyć, gdzie zaczyna się praca i jaki jest jej wynik.',
+    'Kolejny fragment odpowiada za obsługę danych podanych przez użytkownika albo zapisanych w kodzie, zależnie od treści zadania.',
+    'Na końcu kod pokazuje wynik działania w taki sposób, aby można było szybko sprawdzić, czy rozwiązanie robi to, czego oczekujesz.',
+    'Jeśli chcesz zmienić szczegóły, zacznij od nazw, przykładowych danych i prostych wartości, a dopiero później zmieniaj większe części programu.'
+  ]
+}
+
+export const completeGeneratedResult = (result: GeneratedResult, form: AssistantForm): GeneratedResult => ({
+  code: result.code,
+  description: result.description || buildFallbackDescription(form),
+  explanation: result.explanation.length > 0 ? result.explanation : buildFallbackExplanation(form)
+})
 
 export const buildPrompt = (form: AssistantForm) => {
   const language = languageNames[form.language]

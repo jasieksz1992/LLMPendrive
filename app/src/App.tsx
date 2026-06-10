@@ -3,7 +3,7 @@ import { AssistantForm } from './components/AssistantForm'
 import { CodePreview } from './components/CodePreview'
 import { ExplanationAccordion } from './components/ExplanationAccordion'
 import { generateCode } from './lib/llmClient'
-import { buildPrompt, completeGeneratedResult, parseGeneratedResult } from './lib/promptBuilder'
+import { buildPrompt, buildRetryPrompt, completeGeneratedResult, parseGeneratedResult } from './lib/promptBuilder'
 import { saveGeneratedCode } from './lib/saveClient'
 import { detectTaskTarget } from './lib/taskDetection'
 import type { AssistantForm as AssistantFormValues } from './types/assistant'
@@ -28,7 +28,6 @@ const withDetectedTarget = (form: AssistantFormValues): AssistantFormValues => {
 export const App = () => {
   const [form, setForm] = useState(initialForm)
   const [code, setCode] = useState('')
-  const [description, setDescription] = useState('')
   const [explanation, setExplanation] = useState<string[]>([])
   const [error, setError] = useState('')
   const [status, setStatus] = useState('')
@@ -49,18 +48,26 @@ export const App = () => {
     setError('')
     setStatus('')
     setCode('')
-    setDescription('')
     setExplanation([])
 
     try {
       const promptForm = withDetectedTarget(form)
       const prompt = buildPrompt(promptForm)
       const result = await generateCode(prompt)
-      const parsedResult = completeGeneratedResult(parseGeneratedResult(result), promptForm)
+      let parsedResult = completeGeneratedResult(parseGeneratedResult(result), promptForm)
+
+      if (!parsedResult.code) {
+        const retryResult = await generateCode(buildRetryPrompt(promptForm))
+        parsedResult = completeGeneratedResult(parseGeneratedResult(retryResult), promptForm)
+      }
+
       setForm(promptForm)
       setCode(parsedResult.code)
-      setDescription(parsedResult.description)
       setExplanation(parsedResult.explanation)
+
+      if (!parsedResult.code) {
+        setError('Model nie zwrócił poprawnego kodu. Spróbuj skrócić opis zadania albo kliknij Szukaj ponownie.')
+      }
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Generation failed')
     } finally {
@@ -97,7 +104,7 @@ export const App = () => {
     <main className="shell">
       <AssistantForm form={form} loading={loading} onChange={handleFormChange} onSubmit={handleGenerate} />
       <div className="layout">
-        <ExplanationAccordion description={description} explanation={explanation} loading={loading} />
+        <ExplanationAccordion explanation={explanation} loading={loading} />
         <CodePreview code={code} error={error} status={status} loading={loading} onCopy={handleCopy} onSave={handleSave} />
       </div>
     </main>

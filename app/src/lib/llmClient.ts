@@ -48,7 +48,7 @@ export const generateCode = async (prompt: string) => {
       },
       body: JSON.stringify({
         prompt,
-        n_predict: 1024,
+        n_predict: 2048,
         temperature: 0.2,
         repeat_penalty: 1.15,
         repeat_last_n: 256,

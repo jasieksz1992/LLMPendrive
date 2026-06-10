@@ -29,8 +29,10 @@ const normalizeNewlines = (content: string) => content.replace(/\r\n?/g, '\n').t
 
 const findMarker = (content: string, marker: string, fromIndex = 0) => content.toLocaleLowerCase().indexOf(marker.toLocaleLowerCase(), fromIndex)
 
+const findLastMarker = (content: string, marker: string) => content.toLocaleLowerCase().lastIndexOf(marker.toLocaleLowerCase())
+
 const section = (content: string, start: string, end: string) => {
-  const startIndex = findMarker(content, start)
+  const startIndex = findLastMarker(content, start)
 
   if (startIndex === -1) {
     return ''
@@ -97,7 +99,8 @@ const extractFallbackCode = (content: string) => {
 
   if (splitByCode?.after) {
     const codeBeforeExplanation = splitAtHeading(splitByCode.after, explanationHeadingPattern)
-    return stripCodeFence(codeBeforeExplanation?.before || splitByCode.after)
+    const codeBeforeDescription = splitAtHeading(codeBeforeExplanation?.before || splitByCode.after, descriptionHeadingPattern)
+    return stripCodeFence(codeBeforeDescription?.before || codeBeforeExplanation?.before || splitByCode.after)
   }
 
   const splitByExplanation = splitAtHeading(content, explanationHeadingPattern)
@@ -106,7 +109,7 @@ const extractFallbackCode = (content: string) => {
     return stripCodeFence(splitByExplanation.before)
   }
 
-  return stripCodeFence(content)
+  return ''
 }
 
 const extractFallbackExplanation = (content: string) => {
@@ -127,6 +130,8 @@ const normalizeExplanationKey = (line: string) => line
   .replace(/[.!?;:]+$/g, '')
   .trim()
 
+const placeholderExplanationPattern = /^(?:pierwszy dokładny krok|następny dokładny krok|numbered polish steps|ponumerowane kroki|wstaw prawdziwy krok|wpisz prawdziwy krok|krok po polsku)/i
+
 const parseExplanation = (content: string) => {
   const seen = new Set<string>()
   const points: string[] = []
@@ -143,7 +148,7 @@ const parseExplanation = (content: string) => {
 
     const key = normalizeExplanationKey(line)
 
-    if (!key || seen.has(key)) {
+    if (!key || seen.has(key) || placeholderExplanationPattern.test(key)) {
       continue
     }
 
@@ -173,7 +178,6 @@ export const parseGeneratedResult = (rawContent: string): GeneratedResult => {
   }
 }
 
-
 const fallbackLanguageNames: Record<LanguageMode, string> = {
   csharp: 'C#',
   java: 'Java',
@@ -192,58 +196,94 @@ const buildFallbackDescription = (form: AssistantForm) => {
     return `Wygenerowany kod w języku ${fallbackLanguageNames[form.language]} tworzy proste rozwiązanie zgodne z wpisanym poleceniem.`
   }
 
-  return `Wygenerowany kod w języku ${fallbackLanguageNames[form.language]} realizuje zadanie: ${task}. Możesz go skopiować, uruchomić i dopasować szczegóły do swoich potrzeb.`
+  return `Wygenerowany kod w języku ${fallbackLanguageNames[form.language]} realizuje wpisane zadanie.`
 }
 
 const buildFallbackExplanation = (form: AssistantForm) => {
   const language = fallbackLanguageNames[form.language]
-  const task = summarizeTask(form.task)
-  const taskText = task ? `: ${task}` : ''
 
   return [
-    `Najpierw kod tworzy podstawę rozwiązania w języku ${language} dla wpisanego zadania${taskText}.`,
-    'Następnie przygotowuje najważniejsze miejsca programu, czyli te fragmenty, które przechowują dane i wykonują główne czynności.',
-    'Potem program porządkuje działanie krok po kroku, żeby łatwiej było zobaczyć, gdzie zaczyna się praca i jaki jest jej wynik.',
-    'Kolejny fragment odpowiada za obsługę danych podanych przez użytkownika albo zapisanych w kodzie, zależnie od treści zadania.',
-    'Na końcu kod pokazuje wynik działania w taki sposób, aby można było szybko sprawdzić, czy rozwiązanie robi to, czego oczekujesz.',
-    'Jeśli chcesz zmienić szczegóły, zacznij od nazw, przykładowych danych i prostych wartości, a dopiero później zmieniaj większe części programu.'
+    `Najpierw kod tworzy podstawę rozwiązania w języku ${language}, żeby program miał jasne miejsce startu.`,
+    'Następnie przygotowuje najważniejsze dane, czyli informacje potrzebne do wykonania zadania.',
+    'Potem program wykonuje główne czynności w uporządkowanej kolejności, aby łatwo było śledzić działanie.',
+    'Kolejny fragment sprawdza albo przetwarza dane tak, żeby wynik pasował do celu zadania.',
+    'Na końcu kod pokazuje wynik działania w miejscu, w którym użytkownik może go od razu zobaczyć.',
+    'Jeśli chcesz coś zmienić, zacznij od prostych wartości i nazw, a dopiero później zmieniaj większe części programu.'
   ]
 }
 
+const codeLanguageTokens: Record<LanguageMode, RegExp[]> = {
+  csharp: [/\busing\b/, /\bnamespace\b/, /\bclass\b/, /\bstatic\b/, /\bvoid\b/, /\bConsole\./, /[{};]/],
+  java: [/\bimport\b/, /\bpackage\b/, /\bpublic\s+class\b/, /\bstatic\s+void\s+main\b/, /\bSystem\.out\./, /[{};]/],
+  react: [/\bimport\b/, /\bexport\b/, /\bconst\b/, /\bfunction\b/, /\breturn\b/, /<[A-Za-z][^>]*>/, /[{};]/]
+}
+
+const polishDescriptionPattern = /\b(?:zadanie|opis|napisz|utwórz|utworz|program ma|aplikacja ma|wygenerowany kod|kroki rozwiązania|kroki rozwiazania)\b/i
+const codePlaceholderPattern = /^(?:compilable source code only|source code|kod źródłowy|kod zrodlowy|wstaw kod|pełny kod|pelny kod|<source code>|\[.*kod.*\])(?:[,.;:].*)?$/i
+
+const isProbablyGeneratedCode = (code: string, language: LanguageMode, task: string) => {
+  const trimmedCode = code.trim()
+  const trimmedTask = summarizeTask(task).toLocaleLowerCase('pl-PL')
+
+  if (!trimmedCode || codePlaceholderPattern.test(trimmedCode)) {
+    return false
+  }
+
+  if (trimmedTask && summarizeTask(trimmedCode).toLocaleLowerCase('pl-PL') === trimmedTask) {
+    return false
+  }
+
+  const hasCodeToken = codeLanguageTokens[language].some((pattern) => pattern.test(trimmedCode))
+  const shortPlainText = !trimmedCode.includes('\n') && trimmedCode.split(/\s+/).length > 8
+
+  if (!hasCodeToken && (shortPlainText || polishDescriptionPattern.test(trimmedCode))) {
+    return false
+  }
+
+  return hasCodeToken
+}
+
 export const completeGeneratedResult = (result: GeneratedResult, form: AssistantForm): GeneratedResult => ({
-  code: result.code,
+  code: isProbablyGeneratedCode(result.code, form.language, form.task) ? result.code : '',
   description: result.description || buildFallbackDescription(form),
   explanation: result.explanation.length > 0 ? result.explanation : buildFallbackExplanation(form)
 })
+
+
+export const buildRetryPrompt = (form: AssistantForm) => {
+  const language = languageNames[form.language]
+  const task = form.task.trim()
+
+  return [
+    `Generate ONLY real ${language} source code plus Polish steps.`,
+    `Task:
+${task || 'Create a simple working program.'}`,
+    'Do not output placeholders. Do not output the task text as code. Fill the CODE section with actual compilable code.',
+    codeStartMarker,
+    codeEndMarker,
+    explanationStartMarker,
+    explanationEndMarker
+  ].join('\n\n')
+}
 
 export const buildPrompt = (form: AssistantForm) => {
   const language = languageNames[form.language]
   const applicationType = applicationNames[form.detectedApplicationType]
   const task = form.task.trim()
   return [
-    `You are an offline ${language} code assistant running locally from a USB drive.`,
-    `Detected target: ${applicationType}.`,
-    `Language mode selected automatically from the task: ${language}.`,
-    'Generate stable, simple, production-ready code.',
+    `You are an offline ${language} code generator running locally from a USB drive.`,
+    `Target: ${applicationType}. Language: ${language}.`,
+    `User task:
+${task || 'Create a simple working program.'}`,
+    'Create the actual working source code for the task above.',
     'For desktop applications use Java or C# according to the selected language; for web applications use React; for mobile applications use Java.',
-    'Return three strict sections: description, code, and explanation.',
-    'The description section must be in Polish. Write 1-2 plain-language sentences that explain what the generated program does, without technical jargon.',
-    'The code section must contain only compilable source code. Do not put task descriptions, deployment notes, screenshots, packaging instructions, Markdown, or prose inside the code section.',
-    'The explanation section must be in Polish and contain 6-10 numbered points. Write for a complete beginner, not for a programmer.',
-    'Each explanation point must be concrete and detailed: say what happens, why it is needed, and what the user should notice. If you must use a technical word, immediately explain it in simple words.',
-    'Use short, friendly sentences. Avoid unexplained jargon, vague phrases, and repeated points.',
-    'If the task mentions separate fields or code sections, keep them separate in the generated code instead of merging them into one repeated description.',
-    'Return the response in exactly this format and do not add text before or after it:',
-    descriptionStartMarker,
-    'Krótki opis po polsku, prostym językiem.',
-    descriptionEndMarker,
+    'Return only two marked sections. Do not copy these instructions. Do not describe the task.',
+    'Inside CODE put real compilable source code only. Do not put Markdown fences, prose, placeholders, or comments that only repeat the user task.',
+    'Inside EXPLANATION put 6-10 real numbered steps in Polish that explain how the generated code works for a beginner.',
+    'Required output format:',
     codeStartMarker,
-    'compilable source code only, without Markdown fences or prose',
     codeEndMarker,
     explanationStartMarker,
-    '1. Pierwszy dokładny krok po polsku, napisany prostym językiem dla laika.',
-    '2. Następny dokładny krok po polsku, bez skrótów myślowych.',
-    explanationEndMarker,
-    `Task description:\n${task || 'No task description provided'}`
+    explanationEndMarker
   ].join('\n\n')
 }

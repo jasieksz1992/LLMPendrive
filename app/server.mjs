@@ -36,7 +36,7 @@ const readBody = async (request) => {
 const saveCode = async (request, response) => {
   try {
     const body = JSON.parse(await readBody(request))
-    const language = body.language === 'java' ? 'java' : 'csharp'
+    const language = ['java', 'react'].includes(body.language) ? body.language : 'csharp'
     const code = typeof body.code === 'string' ? body.code : ''
 
     if (!code.trim()) {
@@ -44,7 +44,7 @@ const saveCode = async (request, response) => {
       return
     }
 
-    const extension = language === 'java' ? 'java' : 'cs'
+    const extension = language === 'react' ? 'tsx' : language === 'java' ? 'java' : 'cs'
     const directory = path.join(workspaceDir, language)
     const fileName = `generated-${new Date().toISOString().replace(/[:.]/g, '-')}.${extension}`
     const filePath = path.join(directory, fileName)

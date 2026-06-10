@@ -1,4 +1,4 @@
-import type { AssistantForm as AssistantFormValues, LanguageMode, OutputType } from '../types/assistant'
+import type { AssistantForm as AssistantFormValues, OutputType } from '../types/assistant'
 
 const outputTypes: OutputType[] = [
   'Full class',
@@ -7,7 +7,8 @@ const outputTypes: OutputType[] = [
   'Unit test',
   'DTO/model',
   'Service',
-  'Controller'
+  'Controller',
+  'React component'
 ]
 
 type Props = {
@@ -15,6 +16,19 @@ type Props = {
   loading: boolean
   onChange: (form: AssistantFormValues) => void
   onSubmit: () => void
+}
+
+const languageLabels = {
+  csharp: 'C#',
+  java: 'Java',
+  react: 'React'
+}
+
+const applicationLabels = {
+  desktop: 'Desktop',
+  web: 'Web',
+  mobile: 'Mobile',
+  unknown: 'Auto'
 }
 
 export const AssistantForm = ({ form, loading, onChange, onSubmit }: Props) => {
@@ -27,47 +41,41 @@ export const AssistantForm = ({ form, loading, onChange, onSubmit }: Props) => {
 
   return (
     <section className="panel form-panel">
-      <div className="mode-switch" aria-label="Language mode">
-        {(['csharp', 'java'] as LanguageMode[]).map((language) => (
-          <button
-            className={form.language === language ? 'mode-button active' : 'mode-button'}
-            key={language}
-            onClick={() => updateField('language', language)}
-            type="button"
-          >
-            {language === 'csharp' ? 'C# generator' : 'Java generator'}
-          </button>
-        ))}
+      <div className="auto-detection-card" aria-live="polite">
+        <span>Automatycznie wykryto</span>
+        <strong>{applicationLabels[form.detectedApplicationType]} · {languageLabels[form.language]}</strong>
+        <small>Desktop: Java/C# · Web: React · Mobile: Java</small>
       </div>
       <label>
-        <span>Task description</span>
+        <span>Treść zadania</span>
         <textarea
+          className="task-search"
           value={form.task}
           onChange={(event: { target: { value: string } }) => updateField('task', event.target.value)}
-          placeholder="Describe what code you want generated"
+          placeholder="Wpisz krótko, co aplikacja ma zrobić..."
+          rows={2}
+        />
+      </label>
+      <label>
+        <span>Kontekst projektu</span>
+        <textarea
+          value={form.context}
+          onChange={(event: { target: { value: string } }) => updateField('context', event.target.value)}
+          placeholder="Framework, architektura, nazewnictwo, zależności lub ograniczenia"
+          rows={3}
+        />
+      </label>
+      <label>
+        <span>Istniejący kod</span>
+        <textarea
+          value={form.existingCode}
+          onChange={(event: { target: { value: string } }) => updateField('existingCode', event.target.value)}
+          placeholder="Wklej istniejący kod, gdy chcesz refaktor, rozszerzenie lub testy"
           rows={5}
         />
       </label>
       <label>
-        <span>Project context</span>
-        <textarea
-          value={form.context}
-          onChange={(event: { target: { value: string } }) => updateField('context', event.target.value)}
-          placeholder="Framework, architecture, naming rules, dependencies, or constraints"
-          rows={4}
-        />
-      </label>
-      <label>
-        <span>Existing code</span>
-        <textarea
-          value={form.existingCode}
-          onChange={(event: { target: { value: string } }) => updateField('existingCode', event.target.value)}
-          placeholder="Paste existing code when refactoring, extending, or testing"
-          rows={8}
-        />
-      </label>
-      <label>
-        <span>Output type</span>
+        <span>Typ wyniku</span>
         <select value={form.outputType} onChange={(event: { target: { value: string } }) => updateField('outputType', event.target.value as OutputType)}>
           {outputTypes.map((outputType) => (
             <option key={outputType} value={outputType}>{outputType}</option>
@@ -75,7 +83,7 @@ export const AssistantForm = ({ form, loading, onChange, onSubmit }: Props) => {
         </select>
       </label>
       <button className="generate-button" disabled={loading || !form.task.trim()} onClick={onSubmit} type="button">
-        {loading ? 'Generating...' : 'Generate code'}
+        {loading ? 'Generowanie...' : 'Generuj kod'}
       </button>
     </section>
   )

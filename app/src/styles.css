@@ -226,3 +226,99 @@ select:focus {
     min-height: 520px;
   }
 }
+
+.auto-detection-card {
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 14px;
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.85rem;
+}
+
+.auto-detection-card span,
+.auto-detection-card small,
+.muted {
+  color: #94a3b8;
+}
+
+.auto-detection-card strong {
+  color: #bae6fd;
+  font-size: 1.05rem;
+}
+
+.task-search {
+  border-radius: 999px;
+  min-height: 3.25rem;
+  resize: vertical;
+}
+
+.result-stack {
+  display: grid;
+  gap: 1rem;
+  grid-template-rows: minmax(520px, 1fr) auto;
+  min-width: 0;
+}
+
+.code-window {
+  position: relative;
+}
+
+.icon-button {
+  align-items: center;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 1.1rem;
+  justify-content: center;
+  padding: 0.75rem;
+  position: absolute;
+  right: 1rem;
+  top: 1rem;
+}
+
+.preview-actions {
+  padding-right: 3.25rem;
+}
+
+.explanation-window {
+  padding: 0;
+}
+
+.explanation-window details {
+  padding: 1rem;
+}
+
+.explanation-window summary {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  list-style: none;
+}
+
+.explanation-window summary::-webkit-details-marker {
+  display: none;
+}
+
+.explanation-window summary span {
+  color: #dbeafe;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.explanation-window summary small {
+  color: #38bdf8;
+  font-weight: 800;
+}
+
+.explanation-list {
+  color: #dbeafe;
+  display: grid;
+  gap: 0.6rem;
+  margin: 1rem 0 0;
+  max-height: 280px;
+  overflow: auto;
+  padding-left: 1.5rem;
+}

@@ -1,13 +1,21 @@
-export type LanguageMode = 'csharp' | 'java'
+export type LanguageMode = 'csharp' | 'java' | 'react'
 
-export type OutputType = 'Full class' | 'Function/method' | 'Refactor' | 'Unit test' | 'DTO/model' | 'Service' | 'Controller'
+export type ApplicationType = 'desktop' | 'web' | 'mobile' | 'unknown'
+
+export type OutputType = 'Full class' | 'Function/method' | 'Refactor' | 'Unit test' | 'DTO/model' | 'Service' | 'Controller' | 'React component'
 
 export type AssistantForm = {
   language: LanguageMode
+  detectedApplicationType: ApplicationType
   task: string
   context: string
   existingCode: string
   outputType: OutputType
+}
+
+export type GeneratedResult = {
+  code: string
+  explanation: string[]
 }
 
 export type SaveRequest = {

@@ -1,14 +1,17 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AssistantForm } from './components/AssistantForm'
 import { CodePreview } from './components/CodePreview'
+import { ExplanationAccordion } from './components/ExplanationAccordion'
 import { generateCode } from './lib/llmClient'
-import { buildPrompt } from './lib/promptBuilder'
+import { buildPrompt, parseGeneratedResult } from './lib/promptBuilder'
 import { saveGeneratedCode } from './lib/saveClient'
+import { detectTaskTarget } from './lib/taskDetection'
 import type { AssistantForm as AssistantFormValues } from './types/assistant'
 import './styles.css'
 
 const initialForm: AssistantFormValues = {
   language: 'csharp',
+  detectedApplicationType: 'unknown',
   task: '',
   context: '',
   existingCode: '',
@@ -18,19 +21,36 @@ const initialForm: AssistantFormValues = {
 export const App = () => {
   const [form, setForm] = useState(initialForm)
   const [code, setCode] = useState('')
+  const [explanation, setExplanation] = useState<string[]>([])
   const [error, setError] = useState('')
   const [status, setStatus] = useState('')
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    const detected = detectTaskTarget(form.task, form.context)
+
+    if (detected.language !== form.language || detected.applicationType !== form.detectedApplicationType) {
+      setForm((current) => ({
+        ...current,
+        language: detected.language,
+        detectedApplicationType: detected.applicationType,
+        outputType: detected.language === 'react' && current.outputType === 'Full class' ? 'React component' : current.outputType
+      }))
+    }
+  }, [form.context, form.detectedApplicationType, form.language, form.task])
 
   const handleGenerate = async () => {
     setLoading(true)
     setError('')
     setStatus('')
+    setExplanation([])
 
     try {
       const prompt = buildPrompt(form)
       const result = await generateCode(prompt)
-      setCode(result)
+      const parsedResult = parseGeneratedResult(result)
+      setCode(parsedResult.code)
+      setExplanation(parsedResult.explanation)
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Generation failed')
     } finally {
@@ -44,9 +64,9 @@ export const App = () => {
 
     try {
       await navigator.clipboard.writeText(code)
-      setStatus('Copied to clipboard')
+      setStatus('Skopiowano do schowka')
     } catch {
-      setError('Clipboard access failed. Select the generated code and copy it manually.')
+      setError('Dostęp do schowka nie powiódł się. Zaznacz wygenerowany kod i skopiuj ręcznie.')
     }
   }
 
@@ -56,7 +76,7 @@ export const App = () => {
 
     try {
       const result = await saveGeneratedCode(form.language, code)
-      setStatus(`Saved to ${result.path}`)
+      setStatus(`Zapisano do ${result.path}`)
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Save failed')
     }
@@ -68,13 +88,16 @@ export const App = () => {
         <div>
           <p className="eyebrow">USB portable offline assistant</p>
           <h1>Portable Code Assistant</h1>
-          <p>Generate C# and Java code locally with llama.cpp and a GGUF model.</p>
+          <p>Opisz zadanie, a aplikacja sama dobierze C#, Javę albo React do typu projektu.</p>
         </div>
         <div className="offline-badge">Offline localhost only</div>
       </header>
       <div className="layout">
         <AssistantForm form={form} loading={loading} onChange={setForm} onSubmit={handleGenerate} />
-        <CodePreview code={code} error={error} status={status} language={form.language} loading={loading} onCopy={handleCopy} onSave={handleSave} />
+        <div className="result-stack">
+          <CodePreview code={code} error={error} status={status} language={form.language} loading={loading} onCopy={handleCopy} onSave={handleSave} />
+          <ExplanationAccordion explanation={explanation} loading={loading} />
+        </div>
       </div>
     </main>
   )

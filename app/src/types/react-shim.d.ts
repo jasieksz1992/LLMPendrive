@@ -1,6 +1,8 @@
 declare module 'react' {
   export function StrictMode(props: { children?: unknown }): unknown
+  export function useCallback<T extends (...args: any[]) => unknown>(callback: T, dependencies?: unknown[]): T
   export function useEffect(effect: () => void | (() => void), dependencies?: unknown[]): void
+  export function useRef<T>(initialValue: T): { current: T }
   export function useState<T>(initialValue: T): [T, (value: T | ((current: T) => T)) => void]
 }
 

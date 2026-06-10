@@ -50,6 +50,8 @@ export const generateCode = async (prompt: string) => {
         prompt,
         n_predict: 1024,
         temperature: 0.2,
+        repeat_penalty: 1.15,
+        repeat_last_n: 256,
         stop: ['</s>']
       })
     })

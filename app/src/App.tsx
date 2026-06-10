@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { AssistantForm } from './components/AssistantForm'
 import { CodePreview } from './components/CodePreview'
 import { ExplanationAccordion } from './components/ExplanationAccordion'
@@ -18,6 +18,17 @@ const initialForm: AssistantFormValues = {
   outputType: 'Full class'
 }
 
+const withDetectedTarget = (form: AssistantFormValues): AssistantFormValues => {
+  const detected = detectTaskTarget(form.task, form.context)
+
+  return {
+    ...form,
+    language: detected.language,
+    detectedApplicationType: detected.applicationType,
+    outputType: detected.language === 'react' && form.outputType === 'Full class' ? 'React component' : form.outputType
+  }
+}
+
 export const App = () => {
   const [form, setForm] = useState(initialForm)
   const [code, setCode] = useState('')
@@ -25,38 +36,39 @@ export const App = () => {
   const [error, setError] = useState('')
   const [status, setStatus] = useState('')
   const [loading, setLoading] = useState(false)
+  const generationInProgress = useRef(false)
 
-  useEffect(() => {
-    const detected = detectTaskTarget(form.task, form.context)
+  const handleFormChange = useCallback((nextForm: AssistantFormValues) => {
+    setForm(withDetectedTarget(nextForm))
+  }, [])
 
-    if (detected.language !== form.language || detected.applicationType !== form.detectedApplicationType) {
-      setForm((current) => ({
-        ...current,
-        language: detected.language,
-        detectedApplicationType: detected.applicationType,
-        outputType: detected.language === 'react' && current.outputType === 'Full class' ? 'React component' : current.outputType
-      }))
+  const handleGenerate = useCallback(async () => {
+    if (generationInProgress.current) {
+      return
     }
-  }, [form.context, form.detectedApplicationType, form.language, form.task])
 
-  const handleGenerate = async () => {
+    generationInProgress.current = true
     setLoading(true)
     setError('')
     setStatus('')
+    setCode('')
     setExplanation([])
 
     try {
-      const prompt = buildPrompt(form)
+      const promptForm = withDetectedTarget(form)
+      const prompt = buildPrompt(promptForm)
       const result = await generateCode(prompt)
       const parsedResult = parseGeneratedResult(result)
+      setForm(promptForm)
       setCode(parsedResult.code)
       setExplanation(parsedResult.explanation)
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Generation failed')
     } finally {
+      generationInProgress.current = false
       setLoading(false)
     }
-  }
+  }, [form])
 
   const handleCopy = async () => {
     setError('')
@@ -93,7 +105,7 @@ export const App = () => {
         <div className="offline-badge">Offline localhost only</div>
       </header>
       <div className="layout">
-        <AssistantForm form={form} loading={loading} onChange={setForm} onSubmit={handleGenerate} />
+        <AssistantForm form={form} loading={loading} onChange={handleFormChange} onSubmit={handleGenerate} />
         <div className="result-stack">
           <CodePreview code={code} error={error} status={status} language={form.language} loading={loading} onCopy={handleCopy} onSave={handleSave} />
           <ExplanationAccordion explanation={explanation} loading={loading} />

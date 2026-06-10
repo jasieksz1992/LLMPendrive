@@ -9,7 +9,7 @@ export const ExplanationAccordion = ({ explanation, loading }: Props) => {
       <details>
         <summary>
           <span>Jak powstało rozwiązanie</span>
-          <small>{explanation.length ? `${explanation.length}/30 punktów` : 'zwinięte kroki'}</small>
+          <small>{explanation.length ? `${explanation.length}/8 punktów` : 'zwinięte kroki'}</small>
         </summary>
         {loading && <p className="muted">Analizuję zadanie i przygotowuję kroki...</p>}
         {!loading && explanation.length === 0 && (

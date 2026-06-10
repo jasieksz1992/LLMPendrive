@@ -1,15 +1,4 @@
-import type { AssistantForm as AssistantFormValues, OutputType } from '../types/assistant'
-
-const outputTypes: OutputType[] = [
-  'Full class',
-  'Function/method',
-  'Refactor',
-  'Unit test',
-  'DTO/model',
-  'Service',
-  'Controller',
-  'React component'
-]
+import type { AssistantForm as AssistantFormValues } from '../types/assistant'
 
 type Props = {
   form: AssistantFormValues
@@ -55,32 +44,6 @@ export const AssistantForm = ({ form, loading, onChange, onSubmit }: Props) => {
           placeholder="Wpisz krótko, co aplikacja ma zrobić..."
           rows={2}
         />
-      </label>
-      <label>
-        <span>Kontekst projektu</span>
-        <textarea
-          value={form.context}
-          onChange={(event: { target: { value: string } }) => updateField('context', event.target.value)}
-          placeholder="Framework, architektura, nazewnictwo, zależności lub ograniczenia"
-          rows={3}
-        />
-      </label>
-      <label>
-        <span>Istniejący kod</span>
-        <textarea
-          value={form.existingCode}
-          onChange={(event: { target: { value: string } }) => updateField('existingCode', event.target.value)}
-          placeholder="Wklej istniejący kod, gdy chcesz refaktor, rozszerzenie lub testy"
-          rows={5}
-        />
-      </label>
-      <label>
-        <span>Typ wyniku</span>
-        <select value={form.outputType} onChange={(event: { target: { value: string } }) => updateField('outputType', event.target.value as OutputType)}>
-          {outputTypes.map((outputType) => (
-            <option key={outputType} value={outputType}>{outputType}</option>
-          ))}
-        </select>
       </label>
       <button className="generate-button" disabled={loading || !form.task.trim()} onClick={onSubmit} type="button">
         {loading ? 'Generowanie...' : 'Generuj kod'}

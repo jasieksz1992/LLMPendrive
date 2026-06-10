@@ -154,14 +154,10 @@ export const buildPrompt = (form: AssistantForm) => {
   const language = languageNames[form.language]
   const applicationType = applicationNames[form.detectedApplicationType]
   const task = form.task.trim()
-  const context = form.context.trim()
-  const existingCode = form.existingCode.trim()
-
   return [
     `You are an offline ${language} code assistant running locally from a USB drive.`,
     `Detected target: ${applicationType}.`,
     `Language mode selected automatically from the task: ${language}.`,
-    `Output type: ${form.outputType}`,
     'Generate stable, simple, production-ready code.',
     'For desktop applications use Java or C# according to the selected language; for web applications use React; for mobile applications use Java.',
     'Separate the answer into two strict sections: code and explanation.',
@@ -177,8 +173,6 @@ export const buildPrompt = (form: AssistantForm) => {
     '1. Unikalny, krótki punkt wyjaśnienia po polsku.',
     '2. Następny unikalny, krótki punkt wyjaśnienia po polsku.',
     explanationEndMarker,
-    `Task description:\n${task || 'No task description provided'}`,
-    `Project context:\n${context || 'No project context provided'}`,
-    `Existing code:\n${existingCode || 'No existing code provided'}`
+    `Task description:\n${task || 'No task description provided'}`
   ].join('\n\n')
 }

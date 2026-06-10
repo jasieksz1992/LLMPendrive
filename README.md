@@ -162,13 +162,9 @@ scripts\stop.bat
 ## How to use offline
 
 1. Start the assistant with `start.bat`.
-2. Choose `C# generator` or `Java generator`.
-3. Enter a task description.
-4. Add project context if needed.
-5. Paste existing code when refactoring, extending, or generating tests.
-6. Choose the output type.
-7. Select `Generate code`.
-8. Copy the generated code or save it to the local workspace.
+2. Enter a task description.
+3. Select `Generate code`.
+4. Copy the generated code or save it to the local workspace.
 
 Saved files are written to:
 
@@ -197,7 +193,7 @@ prompts\csharp.txt
 prompts\java.txt
 ```
 
-The React app also builds a local prompt from the selected language, task description, project context, existing code, output type, and an instruction to return code only unless explanation is requested.
+The React app also builds a local prompt from the selected language, detected application type, task description, and an instruction to return code with a short Polish explanation.
 
 ## Small local model limitations
 

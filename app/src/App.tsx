@@ -12,20 +12,16 @@ import './styles.css'
 const initialForm: AssistantFormValues = {
   language: 'csharp',
   detectedApplicationType: 'unknown',
-  task: '',
-  context: '',
-  existingCode: '',
-  outputType: 'Full class'
+  task: ''
 }
 
 const withDetectedTarget = (form: AssistantFormValues): AssistantFormValues => {
-  const detected = detectTaskTarget(form.task, form.context)
+  const detected = detectTaskTarget(form.task)
 
   return {
     ...form,
     language: detected.language,
-    detectedApplicationType: detected.applicationType,
-    outputType: detected.language === 'react' && form.outputType === 'Full class' ? 'React component' : form.outputType
+    detectedApplicationType: detected.applicationType
   }
 }
 

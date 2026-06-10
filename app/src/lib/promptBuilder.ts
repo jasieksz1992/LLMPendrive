@@ -72,17 +72,17 @@ const extractFallbackCode = (content: string) => {
     return fencedMatch[1].trim()
   }
 
-  const splitByExplanation = splitAtHeading(content, explanationHeadingPattern)
-
-  if (splitByExplanation?.before) {
-    return stripCodeFence(splitByExplanation.before)
-  }
-
   const splitByCode = splitAtHeading(content, codeHeadingPattern)
 
   if (splitByCode?.after) {
     const codeBeforeExplanation = splitAtHeading(splitByCode.after, explanationHeadingPattern)
     return stripCodeFence(codeBeforeExplanation?.before || splitByCode.after)
+  }
+
+  const splitByExplanation = splitAtHeading(content, explanationHeadingPattern)
+
+  if (splitByExplanation?.before) {
+    return stripCodeFence(splitByExplanation.before)
   }
 
   return stripCodeFence(content)
@@ -99,12 +99,43 @@ const extractFallbackExplanation = (content: string) => {
   return ''
 }
 
-const parseExplanation = (content: string) => content
-  .split('\n')
-  .map((line) => line.replace(/^\s*(?:[-*]|\d+[.)])\s*/, '').trim())
-  .map((line) => line.replace(/^(?:explanation|wyjaśnienie|wyjasnienie|tłumaczenie|tlumaczenie)\s*:?\s*/i, '').trim())
-  .filter(Boolean)
-  .slice(0, 30)
+const normalizeExplanationKey = (line: string) => line
+  .toLocaleLowerCase('pl-PL')
+  .replace(/[`*_~]/g, '')
+  .replace(/\s+/g, ' ')
+  .replace(/[.!?;:]+$/g, '')
+  .trim()
+
+const parseExplanation = (content: string) => {
+  const seen = new Set<string>()
+  const points: string[] = []
+
+  for (const rawLine of content.split('\n')) {
+    const line = rawLine
+      .replace(/^\s*(?:[-*]|\d+[.)])\s*/, '')
+      .replace(/^(?:explanation|wyjaśnienie|wyjasnienie|tłumaczenie|tlumaczenie)\s*:?\s*/i, '')
+      .trim()
+
+    if (!line || findMarker(line, '---CODE_') !== -1 || findMarker(line, '---EXPLANATION_') !== -1) {
+      continue
+    }
+
+    const key = normalizeExplanationKey(line)
+
+    if (!key || seen.has(key)) {
+      continue
+    }
+
+    seen.add(key)
+    points.push(line)
+
+    if (points.length === 8) {
+      break
+    }
+  }
+
+  return points
+}
 
 export const parseGeneratedResult = (rawContent: string): GeneratedResult => {
   const content = normalizeNewlines(rawContent)
@@ -135,14 +166,16 @@ export const buildPrompt = (form: AssistantForm) => {
     'For desktop applications use Java or C# according to the selected language; for web applications use React; for mobile applications use Java.',
     'Separate the answer into two strict sections: code and explanation.',
     'The code section must contain only compilable source code. Do not put task descriptions, deployment notes, screenshots, packaging instructions, Markdown, or prose inside the code section.',
-    'The explanation section must be in Polish and contain only concise numbered explanation points. Put all task interpretation and implementation notes there.',
+    'The explanation section must be in Polish and contain 3-6 concise, unique numbered points only.',
+    'Do not repeat the same assumption or method description in the explanation. Do not restate the full task as a bullet list.',
+    'If the task mentions separate fields or code sections, keep them separate in the generated code instead of merging them into one repeated description.',
     'Return the response in exactly this format and do not add text before or after it:',
     codeStartMarker,
-    'code only, without Markdown fences',
+    'compilable source code only, without Markdown fences or prose',
     codeEndMarker,
     explanationStartMarker,
-    '1. Pierwszy punkt wyjaśnienia po polsku.',
-    '2. Kolejny punkt wyjaśnienia po polsku.',
+    '1. Unikalny, krótki punkt wyjaśnienia po polsku.',
+    '2. Następny unikalny, krótki punkt wyjaśnienia po polsku.',
     explanationEndMarker,
     `Task description:\n${task || 'No task description provided'}`,
     `Project context:\n${context || 'No project context provided'}`,

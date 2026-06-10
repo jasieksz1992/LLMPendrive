@@ -7,47 +7,30 @@ type Props = {
   onSubmit: () => void
 }
 
-const languageLabels = {
-  csharp: 'C#',
-  java: 'Java',
-  react: 'React'
-}
-
-const applicationLabels = {
-  desktop: 'Desktop',
-  web: 'Web',
-  mobile: 'Mobile',
-  unknown: 'Auto'
-}
-
 export const AssistantForm = ({ form, loading, onChange, onSubmit }: Props) => {
-  const updateField = <K extends keyof AssistantFormValues>(key: K, value: AssistantFormValues[K]) => {
+  const updateTask = (value: string) => {
     onChange({
       ...form,
-      [key]: value
+      task: value
     })
   }
 
   return (
-    <section className="panel form-panel">
-      <div className="auto-detection-card" aria-live="polite">
-        <span>Automatycznie wykryto</span>
-        <strong>{applicationLabels[form.detectedApplicationType]} · {languageLabels[form.language]}</strong>
-        <small>Desktop: Java/C# · Web: React · Mobile: Java</small>
-      </div>
-      <label>
-        <span>Treść zadania</span>
-        <textarea
-          className="task-search"
-          value={form.task}
-          onChange={(event: { target: { value: string } }) => updateField('task', event.target.value)}
-          placeholder="Wpisz krótko, co aplikacja ma zrobić..."
-          rows={2}
-        />
-      </label>
-      <button className="generate-button" disabled={loading || !form.task.trim()} onClick={onSubmit} type="button">
-        {loading ? 'Generowanie...' : 'Generuj kod'}
+    <form className="search-panel" onSubmit={(event: { preventDefault: () => void }) => {
+      event.preventDefault()
+      onSubmit()
+    }}>
+      <textarea
+        aria-label="Opis zadania"
+        className="task-search"
+        value={form.task}
+        onChange={(event: { target: { value: string } }) => updateTask(event.target.value)}
+        placeholder="Opisz, co chcesz zrobić, np. program do listy produktów z ceną i stanem magazynu..."
+        rows={2}
+      />
+      <button className="generate-button" disabled={loading || !form.task.trim()} type="submit">
+        {loading ? 'Szukam rozwiązania...' : 'Szukaj'}
       </button>
-    </section>
+    </form>
   )
 }

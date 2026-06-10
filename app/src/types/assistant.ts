@@ -10,6 +10,7 @@ export type AssistantForm = {
 
 export type GeneratedResult = {
   code: string
+  description: string
   explanation: string[]
 }
 

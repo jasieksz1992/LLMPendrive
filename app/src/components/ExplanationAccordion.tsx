@@ -1,19 +1,23 @@
 type Props = {
+  description: string
   explanation: string[]
   loading: boolean
 }
 
-export const ExplanationAccordion = ({ explanation, loading }: Props) => {
+export const ExplanationAccordion = ({ description, explanation, loading }: Props) => {
   return (
-    <section className="panel explanation-window">
-      <details>
-        <summary>
-          <span>Jak powstało rozwiązanie</span>
-          <small>{explanation.length ? `${explanation.length}/8 punktów` : 'zwinięte kroki'}</small>
-        </summary>
-        {loading && <p className="muted">Analizuję zadanie i przygotowuję kroki...</p>}
+    <aside className="result-info" aria-label="Opis i kroki rozwiązania">
+      <section className="panel text-panel">
+        <div className="section-bar">Opis</div>
+        {loading && <p className="muted">Przygotowuję prosty opis...</p>}
+        {!loading && <p>{description || 'Po wyszukaniu rozwiązania pojawi się tutaj krótki opis.'}</p>}
+      </section>
+
+      <section className="panel text-panel">
+        <div className="section-bar">Kroki rozwiązania</div>
+        {loading && <p className="muted">Rozpisuję kroki prostym językiem...</p>}
         {!loading && explanation.length === 0 && (
-          <p className="muted">Po wygenerowaniu kodu zobaczysz tutaj zwięzłe wyjaśnienie krok po kroku.</p>
+          <p className="muted">Tutaj pojawią się dokładne kroki napisane jak dla osoby początkującej.</p>
         )}
         {explanation.length > 0 && (
           <ol className="explanation-list">
@@ -22,7 +26,7 @@ export const ExplanationAccordion = ({ explanation, loading }: Props) => {
             ))}
           </ol>
         )}
-      </details>
-    </section>
+      </section>
+    </aside>
   )
 }

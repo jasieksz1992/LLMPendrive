@@ -8,8 +8,8 @@ export type TaskDetectionResult = {
 
 const containsAny = (value: string, keywords: string[]) => keywords.some((keyword) => value.includes(keyword))
 
-export const detectTaskTarget = (task: string, context = ''): TaskDetectionResult => {
-  const text = `${task} ${context}`.toLowerCase()
+export const detectTaskTarget = (task: string): TaskDetectionResult => {
+  const text = task.toLowerCase()
 
   if (containsAny(text, ['react', 'web', 'www', 'strona', 'aplikacja webowa', 'frontend', 'przeglądarka', 'browser', 'vite'])) {
     return {
